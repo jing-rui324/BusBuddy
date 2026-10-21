@@ -1,0 +1,41 @@
+services:
+  webserver:
+    image: apache/airflow:3.1.0
+    environment:
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@database:5432/airflow
+    depends_on:
+      - database
+    ports:
+      - "8080:8080"
+    command: api-server
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+
+  scheduler:
+    image: apache/airflow:3.1.0
+    environment:
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@database:5432/airflow
+    depends_on:
+      - database
+    command: scheduler
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ./plugins:/opt/airflow/plugins
+
+  database:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+
+  airflow-init:
+    image: apache/airflow:3.1.0
+    environment:
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@database:5432/airflow
+    depends_on:
+      - database
+    command: db migrate
