@@ -12,9 +12,15 @@ services:
       - ./dags:/opt/airflow/dags
       - ./logs:/opt/airflow/logs
       - ./plugins:/opt/airflow/plugins
+      - ../src:/opt/busbuddy/src
+      - ../config:/opt/busbuddy/config
+      - ../data:/opt/busbuddy/data
 
   scheduler:
     image: apache/airflow:3.1.0
+    working_dir: /opt/busbuddy
+    env_file:
+      - ../.env
     environment:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@database:5432/airflow
     depends_on:
@@ -24,6 +30,9 @@ services:
       - ./dags:/opt/airflow/dags
       - ./logs:/opt/airflow/logs
       - ./plugins:/opt/airflow/plugins
+      - ../src:/opt/busbuddy/src
+      - ../config:/opt/busbuddy/config
+      - ../data:/opt/busbuddy/data
 
   database:
     image: postgres:16
