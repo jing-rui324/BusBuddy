@@ -39,6 +39,7 @@ def main():
         raise RuntimeError("LTA_API_KEY is not set. Please set it in the environment variables.")
     run_time = datetime.now(ZoneInfo("Asia/Singapore"))
     records = []
+    failed_stops = []
     for stop_code in load_stop_list():
         polled_at = datetime.now(ZoneInfo("Asia/Singapore")).isoformat()
         try:
@@ -54,10 +55,13 @@ def main():
                 )
             )
             print(f"Failed {stop_code}: {e}")
+            failed_stops.append(stop_code)
             continue
         records.append(wrap(stop_code, response.status_code, response.json(), polled_at))
     path = save(records, run_time)
     print(f"Saved {len(records)} stops to {path}")
+    if failed_stops:
+        raise RuntimeError(f"Failed to fetch data for {len(failed_stops)} stops: {failed_stops}")
 
 
 if __name__ == "__main__":
