@@ -13,7 +13,8 @@ def fetch_stop(stop_id):
     return requests.get(
         config.BUS_ARRIVAL_URL,
         headers={"AccountKey": config.LTA_API_KEY, "accept": "application/json"},
-        params={"BusStopCode": stop_id}
+        params={"BusStopCode": stop_id},
+        timeout=10
     )
 
 def wrap(stop_code, http_status, payload, polled_at):
@@ -34,19 +35,33 @@ def save(records, run_time):
     return path
 
 def main():
+    if not config.LTA_API_KEY:
+        raise RuntimeError("LTA_API_KEY is not set. Please set it in the environment variables.")
     run_time = datetime.now(ZoneInfo("Asia/Singapore"))
     records = []
+    failed_stops = []
     for stop_code in load_stop_list():
         polled_at = datetime.now(ZoneInfo("Asia/Singapore")).isoformat()
         try:
             response = fetch_stop(stop_code)
             response.raise_for_status()
         except requests.RequestException as e:
+            records.append(
+                wrap(
+                    stop_code,
+                    e.response.status_code if e.response is not None else None,
+                    {"error": str(e)},
+                    polled_at,
+                )
+            )
             print(f"Failed {stop_code}: {e}")
+            failed_stops.append(stop_code)
             continue
         records.append(wrap(stop_code, response.status_code, response.json(), polled_at))
     path = save(records, run_time)
     print(f"Saved {len(records)} stops to {path}")
+    if failed_stops:
+        raise RuntimeError(f"Failed to fetch data for {len(failed_stops)} stops: {failed_stops}")
 
 
 if __name__ == "__main__":
